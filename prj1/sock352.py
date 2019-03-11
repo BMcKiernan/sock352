@@ -151,7 +151,6 @@ class socket:
             if i == len(packets):
                 header = self.__create_header(DATA, i, 0, size)
                 packets.append(header+fragment)
-                # print('Inside if  i==len(packets)    i:  ' + str(i) + ' len(packets): ' + str(len(packets[i])))
 
             while total_sent < len(packets[i]):
                 sent = tSocket.sendto((packets[i])[total_sent:], other_address)
@@ -161,7 +160,8 @@ class socket:
                     print('Total sent bytes: ' + str(sent))
                     total_sent += sent
 
-            bytes_sent += total_sent - header_len
+            if i >= last_acked:
+                bytes_sent += total_sent - header_len
 
             if start:
 
@@ -169,10 +169,8 @@ class socket:
                     start = time.time()
                 elif last_acked > i:
                     i = last_acked
-                elif last_acked < i - 1 and time.time() - start >= 0.002:  # timeout never occurs so need other condition
+                elif last_acked < i - 1 and time.time() - start >= 0.2:  # timeout never occurs so need other condition
                     go_back_i = True
-                else:
-                    print('\n\n In else, time is: ' + str(time.time() - start) + ' i: ' + str(i) + ' last_acked: ' + str(last_acked))
 
             else:
                 start = time.time()
