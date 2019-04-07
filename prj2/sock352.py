@@ -6,9 +6,12 @@
 
 # main libraries 
 import binascii
+import threading
 import socket as syssock
 import struct
 import sys
+import time
+from random import randint
 
 # encryption libraries 
 import nacl.utils
@@ -24,8 +27,8 @@ from inspect import currentframe, getframeinfo
 # and received from
 
 # the ports to use for the sock352 messages 
-global sock352portTx
-global sock352portRx
+global portTx
+global portRx
 # the public and private keychains in hex format 
 global publicKeysHex
 global privateKeysHex
@@ -45,13 +48,9 @@ privateKeys = {}
 # this is 0xEC 
 ENCRYPT = 236 
 
-# this is the structure of the sock352 packet 
-sock352HdrStructStr = '!BBBBHHLLQQLL'
-
 #Global variables that store the sending and receiving ports of the socket
 portTx = 0
 portRx = 0
-
 
 #Global variables that store the packet header format and packet header length
 #to use within the struct in order to pack and unpack
@@ -169,14 +168,23 @@ class socket:
 
         # declares the last packet that was acked (for the sender only)
         self.last_data_packet_acked = None
-        
+
+        #sets the enctyption state to false
+        self.encrypt = False
+
+        return
+
     def bind(self,address):
         self.socket.bind((address[0], portRx))
+        return
 
     def connect(self,*args):
-
-        # example code to parse an argument list (use option arguments if you want)
-        global sock352portTx
+        global privateKeys
+        global privateKeysHex
+        global publicKeys
+        global publicKeysHex
+        global udpG
+        global portTx
         global ENCRYPT
         if (len(args) >= 1):
             address = args[0]
@@ -184,9 +192,13 @@ class socket:
             if (args[1] == ENCRYPT):
                 self.encrypt = True
 
-        #Add nonce creating bullshit here
+        #if the connection is encrypted set get the public and private keys
+        if (self.encrypt == True):
+            self.box = Box(privateKeys[("*"), "*"], publicKeys[host, sock352portRx])
+            self.nonce = nacl.util.random(Box.NONCE_SIZE)
 
-
+        syn_packet =
+   
         self.send_address = (address[0], portTx)
 
         # binds the client on the receiving port
@@ -533,7 +545,7 @@ class socket:
 
     def createPacket(self, flags=0x0, sequence_no=0x0, ack_no=0x0, payload_len=0x0):
         return struct.Struct(PACKET_HEADER_FORMAT).pack \
-                (
+            (
                 0x1,  # version
                 flags,  # flags
                 0x0,  # opt_ptr
