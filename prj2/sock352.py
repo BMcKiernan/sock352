@@ -149,10 +149,10 @@ class socket:
         self.is_connected = False
 
         #controls whather or not this socket can close
-        self.can_close
+        self.can_close = False
 
         #selects a random sequence number between 1 and 1000000 as the first sequence number
-        self.sequence_no = randint(1, 1000000)
+        self.sequence_no = randint(1, 100000)
 
         #declares the file length, which will set later
         self.file_len = -1
@@ -191,8 +191,10 @@ class socket:
 
         #if the connection is encrypted set get the public and private keys
         if (self.encrypt == True):
-            self.box = Box(privateKeys[("*"), "*"], publicKeys[host, sock352portRx])
-            self.nonce = nacl.util.random(Box.NONCE_SIZE)
+            print "public key is:  %s" % publicKeysHex[(address[0], address[1])]
+            print "private key is: %s" % privateKeysHex[('*', '*')]
+            self.box = Box(privateKeys[('*','*')], publicKeys[address[0], address[1]])
+            self.nonce = nacl.utils.random(Box.NONCE_SIZE)
 
         syn_packet =
    
@@ -209,6 +211,12 @@ class socket:
         # Step 1: Request to connect to the server by setting the SYN flag
         # first the packet is created using createPacket and passing in the apprpriate variables
         syn_packet = self.createPacket(flags=SOCK352_SYN, sequence_no=self.sequence_no)
+
+        #if encryption is set on the encrypt synpacket
+        if (self.encrypt):
+            syn_packet = self.box.encrypt(syn_packet, self.nonce)
+            syn_packet_length = len(syn_packet)
+
         self.socket.sendto(syn_packet, self.send_address)
         # increments the sequence since it was consumed in creation of the SYN packet
         self.sequence_no += 1
@@ -588,23 +596,5 @@ class socket:
 
         # the data or the payload is then itself is returned from this method
         return packet_data
-
-
-
-    def createPacket(self, flags=0x0, sequence_no=0x0, ack_no=0x0, payload_len=0x0):
-        return struct.Struct(PACKET_HEADER_FORMAT).pack \
-            (
-                0x1, #version
-                flags, #flags
-                0x0, #opt_ptr
-                0x0, #protocol
-                PACKET_HEADER_LENGTH,   #header_len
-                0x0,     #checksum
-                0x0,     #source_port
-                0x0,     #window
-                payload_len     #payload_len
-            )
-
-    
 
 
