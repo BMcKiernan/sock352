@@ -71,22 +71,6 @@ SOCK352_ACK = 0x04
 SOCK352_RESET = 0x08
 SOCK352_HAS_OPT = 0x10
 
-
-#String message to print out that a connection has been already established
-CONNECTION_ALREADY_ESTABLISHED_MESSAGE = "This socket supports a maximum of one connection\n" \
-                                        "And a connection is already established"
-
-def init(UDPportTx,UDPportRx):
-    if (UDPportTx is None or UDPportTx == 0):
-        UDPportTx = 27182
-
-    if (UDPportRx is None or UDPportRx == 0):
-        UDPportRx = 27182
-
-    global portTx portRx
-    portTx = int(UDPportTx)
-    portRx = int(UDPportRx)
-
 #Global variables that store the index for the flag, sequence no. and ack no. within the packet header
 PACKET_FLAG_INDEX = 1
 PACKET_SEQUENCE_NO_INDEX = 8
