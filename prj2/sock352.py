@@ -183,6 +183,7 @@ class socket:
         global udpG
         global portTx
         global ENCRYPT
+        address = ()
         if (len(args) >= 1):
             address = args[0]
         if (len(args) >= 2):
@@ -191,12 +192,12 @@ class socket:
 
         #if the connection is encrypted set get the public and private keys
         if (self.encrypt == True):
-            print "public key is:  %s" % publicKeysHex[(address[0], address[1])]
+            print "public key is:  %s" % publicKeysHex[(address[0], portTx)]
             print "private key is: %s" % privateKeysHex[('*', '*')]
-            self.box = Box(privateKeys[('*','*')], publicKeys[address[0], address[1]])
+            self.box = Box(privateKeys[('*','*')], publicKeys[(address[0], portTx)])
             self.nonce = nacl.utils.random(Box.NONCE_SIZE)
 
-        syn_packet =
+        #syn_packet =
    
         self.send_address = (address[0], portTx)
 
