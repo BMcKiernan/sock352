@@ -55,6 +55,7 @@ portRx = 0
 #Global variables that store the packet header format and packet header length
 #to use within the struct in order to pack and unpack
 PACKET_HEADER_FORMAT = "!BBBBHHLLQQLL"
+
 PACKET_HEADER_LENGTH = struct.calcsize(PACKET_HEADER_FORMAT)
 
 #Global variables that are responsible for storing the maximum packet size and the
@@ -62,12 +63,29 @@ PACKET_HEADER_LENGTH = struct.calcsize(PACKET_HEADER_FORMAT)
 MAXIMUM_PACKET_SIZE = 64000
 MAXIMUM_PAYLOAD_SIZE = MAXIMUM_PACKET_SIZE - PACKET_HEADER_LENGTH
 
+
 #Global variables that define all the packet bits
 SOCK352_SYN = 0x01
 SOCK352_FIN = 0x02
 SOCK352_ACK = 0x04
 SOCK352_RESET = 0x08
 SOCK352_HAS_OPT = 0x10
+
+
+#String message to print out that a connection has been already established
+CONNECTION_ALREADY_ESTABLISHED_MESSAGE = "This socket supports a maximum of one connection\n" \
+                                        "And a connection is already established"
+
+def init(UDPportTx,UDPportRx):
+    if (UDPportTx is None or UDPportTx == 0):
+        UDPportTx = 27182
+
+    if (UDPportRx is None or UDPportRx == 0):
+        UDPportRx = 27182
+
+    global portTx portRx
+    portTx = int(UDPportTx)
+    portRx = int(UDPportRx)
 
 #Global variables that store the index for the flag, sequence no. and ack no. within the packet header
 PACKET_FLAG_INDEX = 1
@@ -91,6 +109,7 @@ def init(UDPportTx, UDPportRx):
     global portTx, portRx
     portTx = int(UDPportTx)
     portRx = int(UDPportRx)
+
 
     # create the sockets to send and receive UDP packets on 
     # if the ports are not equal, create two sockets, one for Tx and one for Rx
@@ -132,41 +151,35 @@ def readKeyChain(filename):
 class socket:
     
     def __init__(self):
-        # creates the socket
+
+        #create the socket
         self.socket = syssock.socket(syssock.AF_INET, syssock.SOCK_DGRAM)
 
-        # sets the timeout to be 0.2 seconds
+        #sets the timeout to be 0.2 second
         self.socket.settimeout(0.2)
 
-        # sets the send address to be None (to be initialized later)
+        #sets the send address to be None
         self.send_address = None
 
-        # sets the boolean for whether or not the socket is connected
+        #sets the boolean for whether or not the socket is connected
         self.is_connected = False
 
-        # controls whether or not this socket can close (it's only allowed to close once all data is received)
-        self.can_close = False
+        #controls whather or not this socket can close
+        self.can_close
 
-        # selects a random sequence number between 1 and 100000 as the first sequence number
-        self.sequence_no = randint(1, 100000)
+        #selects a random sequence number between 1 and 1000000 as the first sequence number
+        self.sequence_no = randint(1, 1000000)
 
-        # sets the ack number of the socket to be 0, inititalized later when connection is established
-        self.ack_no = 0
-
-        # declares the data packets array, for the sender its the packets it sends and for the receiver, its the
-        # packets it has received
-        self.data_packets = []
-
-        # declares the file length, which will set later (in send by the client and in recv by the server)
+        #declares the file length, which will set later
         self.file_len = -1
 
-        # declares the retransmit boolean which represents whether or not to resend packets and Go-Back-N
+        #declares the retrasnmit boolean which represents whether or not to resend packets and Go-Back_N
         self.retransmit = False
 
-        # the corresponding lock for the retransmit boolean
+        #the cooresponding lock for the retransmit boolean
         self.retransmit_lock = threading.Lock()
 
-        # declares the last packet that was acked (for the sender only)
+        #declares the last packet that was acked
         self.last_data_packet_acked = None
 
         #sets the enctyption state to false
@@ -257,6 +270,7 @@ class socket:
         # sends the ack packet to the server, as it assumes it's connected now
         self.socket.sendto(ack_packet, self.send_address)
         print ("Client is now connected to the server at %s:%s" % (self.send_address[0], self.send_address[1]))
+
 
     def listen(self,backlog):
         # listen is not used in this assignments 
@@ -593,6 +607,19 @@ class socket:
 
 
 
+    def createPacket(self, flags=0x0, sequence_no=0x0, ack_no=0x0, payload_len=0x0):
+        return struct.Struct(PACKET_HEADER_FORMAT).pack \
+            (
+                0x1, #version
+                flags, #flags
+                0x0, #opt_ptr
+                0x0, #protocol
+                PACKET_HEADER_LENGTH,   #header_len
+                0x0,     #checksum
+                0x0,     #source_port
+                0x0,     #window
+                payload_len     #payload_len
+            )
 
     
 
