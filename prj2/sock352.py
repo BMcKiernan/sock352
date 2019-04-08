@@ -192,12 +192,10 @@ class socket:
 
         #if the connection is encrypted set get the public and private keys
         if (self.encrypt == True):
-            print "public key is:  %s" % publicKeysHex[(address[0], portTx)]
+            print "public key is:  %s" % publicKeysHex[(address[0], str(portTx))]
             print "private key is: %s" % privateKeysHex[('*', '*')]
-            self.box = Box(privateKeys[('*','*')], publicKeys[(address[0], portTx)])
+            self.box = Box(privateKeys[('*','*')], publicKeys[(address[0], str(portTx))])
             self.nonce = nacl.utils.random(Box.NONCE_SIZE)
-
-        #syn_packet =
    
         self.send_address = (address[0], portTx)
 
@@ -212,11 +210,6 @@ class socket:
         # Step 1: Request to connect to the server by setting the SYN flag
         # first the packet is created using createPacket and passing in the apprpriate variables
         syn_packet = self.createPacket(flags=SOCK352_SYN, sequence_no=self.sequence_no)
-
-        #if encryption is set on the encrypt synpacket
-        if (self.encrypt):
-            syn_packet = self.box.encrypt(syn_packet, self.nonce)
-            syn_packet_length = len(syn_packet)
 
         self.socket.sendto(syn_packet, self.send_address)
         # increments the sequence since it was consumed in creation of the SYN packet
