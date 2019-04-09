@@ -1,4 +1,4 @@
-#This is lightly edited code from Anarav Patel and Saurin Shah
+# This is lightly edited code from Anarav Patel and Saurin Shah
 import binascii
 import threading
 import socket as syssock
@@ -7,34 +7,34 @@ import sys
 import time
 from random import randint
 
-#Global variables that store the sending and receiving ports of the socket
+# Global variables that store the sending and receiving ports of the socket
 portTx = 0
 portRx = 0
 
 
-#Global variables that store the packet header format and packet header length
-#to use within the struct in order to pack and unpack
+# Global variables that store the packet header format and packet header length
+# to use within the struct in order to pack and unpack
 PACKET_HEADER_FORMAT = "!BBBBHHLLQQLL"
 PACKET_HEADER_LENGTH = struct.calcsize(PACKET_HEADER_FORMAT)
 
-#Global variables that are responsible for storing the maximum packet size and the
-#maximum payload size
+# Global variables that are responsible for storing the maximum packet size and the
+# maximum payload size
 MAXIMUM_PACKET_SIZE = 64000
 MAXIMUM_PAYLOAD_SIZE = MAXIMUM_PACKET_SIZE - PACKET_HEADER_LENGTH
 
-#Global variables that define all the packet bits
+# Global variables that define all the packet bits
 SOCK352_SYN = 0x01
 SOCK352_FIN = 0x02
 SOCK352_ACK = 0x04
 SOCK352_RESET = 0x08
 SOCK352_HAS_OPT = 0x10
 
-#Global variables that store the index for the flag, sequence no. and ack no. within the packet header
+# Global variables that store the index for the flag, sequence no. and ack no. within the packet header
 PACKET_FLAG_INDEX = 1
 PACKET_SEQUENCE_NO_INDEX = 8
 PACKET_ACK_NO_INDEX = 9
 
-#String message to print out that a connection has been already established
+# String message to print out that a connection has been already established
 CONNECTION_ALREADY_ESTABLISHED_MESSAGE = "This socket supports a maximum of one connection\n" \
                                  "And a connection is already established"
 
