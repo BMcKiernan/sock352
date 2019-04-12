@@ -165,16 +165,16 @@ class socket:
         # declares the file length, which will set later
         self.file_len = -1
 
-        # declares the retrasnmit boolean which represents whether or not to resend packets and Go-Back_N
+        # declares the retransmit boolean which represents whether or not to resend packets and Go-Back_N
         self.retransmit = False
 
-        # the cooresponding lock for the retransmit boolean
+        # the corresponding lock for the retransmit boolean
         self.retransmit_lock = threading.Lock()
 
         # declares the last packet that was acked
         self.last_data_packet_acked = None
 
-        # sets the enctyption state to false
+        # sets the encryption state to false
         self.encrypt = False
 
         # box used for encryption
@@ -185,23 +185,31 @@ class socket:
 
         return
 
-    def bind(self,address):
+    def bind(self, address):
         self.socket.bind((address[0], portRx))
         return
 
-    def connect(self,*args):
+    def connect(self, *args):
         if len(args) >= 1:
             address = args[0]
         if len(args) >= 2:
             if args[1] == ENCRYPT:
                 self.encrypt = True
 
-        # if the connection is encrypted set get the public and private keys
+        # if the connection is encrypted get the public and private keys
         if self.encrypt:
-            # print "public key is:  %s" % publicKeysHex[(address[0], str(portTx))]
-            # print "private key is: %s" % privateKeysHex[('*', '*')]
-            print((address[0], str(portTx)))
-            self.box = Box(privateKeys[('*','*')], publicKeys[(address[0], str(portTx))])
+            print(address[0], str(portTx))
+
+            # checks to see if conversion needs to be made in terms of 127.0.0.1/localhost
+            # this lets the keyfile specify either creating an error in the dictionary
+            key = (address[0], str(address[1]))
+            if address[0] == '127.0.0.1' and ('127.0.0.1', str(address[1])) not in publicKeys:
+                key = ('localhost', str(portTx))
+            elif address[0] == 'localhost' and ('localhost', str(address[1])) not in publicKeys:
+                key = ('127.0.0.1', str(portTx))
+
+            # setup the box and nonce
+            self.box = Box(privateKeys[('*', '*')], publicKeys[key])
             self.nonce = nacl.utils.random(Box.NONCE_SIZE)
    
         self.send_address = (address[0], portTx)
@@ -264,13 +272,11 @@ class socket:
         self.socket.sendto(ack_packet, self.send_address)
         print ("Client is now connected to the server at %s:%s" % (self.send_address[0], self.send_address[1]))
 
-
-    def listen(self,backlog):
+    def listen(self, backlog):
         # listen is not used in this assignments 
         pass
-    
 
-    def accept(self,*args):
+    def accept(self, *args):
         # example code to parse an argument list (use option arguments if you want)
         if len(args) >= 1:
             if args[0] == ENCRYPT:
@@ -297,12 +303,19 @@ class socket:
             except syssock.timeout:
                 pass
 
+        # if the encrypt flag is set setup the box and the nonce
         if self.encrypt:
+
+            # checks to see if conversion needs to be made in terms of 127.0.0.1/localhost
+            # this lets the keyfile specify either avoiding a potential error in the dictionary
+            # the error occurs as a result of recvfrom() getting 127.0.0.1
             key = (addr[0], str(addr[1]))
-            # if addr[0] == '127.0.0.1':
-            #     key = ('localhost', str(addr[1]))
-            # else:
-            #     key = (addr[0], str(addr[1]))
+            if addr[0] == '127.0.0.1' and ('127.0.0.1', str(addr[1])) not in publicKeys:
+                key = ('localhost', str(addr[1]))
+            elif addr[0] == 'localhost' and ('localhost', str(addr[1])) not in publicKeys:
+                key = ('127.0.0.1', str(addr[1]))
+
+            # setup the box and the nonce
             self.box = Box(privateKeys[('*', '*')], publicKeys[key])
             self.nonce = nacl.utils.random(Box.NONCE_SIZE)
 
@@ -400,8 +413,9 @@ class socket:
                 if len(buffer) % MAXIMUM_PAYLOAD_SIZE != 0:
                     payload_len = len(buffer) % MAXIMUM_PAYLOAD_SIZE
 
-            # if self.encrypt is false opt is default else 0x01
+            # if self.encrypt is false opt is default 0x0
             opt = 0x0
+            # if self.encrypt is true opt is 0x01
             if self.encrypt:
                 opt = 0x01
             # creates the new packet with the appropriate header
@@ -414,11 +428,15 @@ class socket:
             self.sequence_no += 1
             self.ack_no += 1
 
-            # get the data payload from the buffer and if self.encrypt is true encrypt it
+            # get the data payload from the buffer
             payload = buffer[MAXIMUM_PAYLOAD_SIZE * i: MAXIMUM_PAYLOAD_SIZE * i + payload_len]
+
+            # if encryption is set encrypt the payload before adding the packet to data_packets
+            # for go_back_n to be consistent all packets in data_packets should be encrypted or not
             if self.encrypt:
                 payload = self.box.encrypt(payload, self.nonce)
 
+            # attach the packet payload to the header to finish creating packet and add to self.data_packets
             self.data_packets.append(new_packet + payload)
 
             # original
@@ -542,6 +560,12 @@ class socket:
         # also declares a variable to hold all the string of the data that has been received
         data_received = ""
 
+        # if self.encrypt is true 40 extra bytes need to be specified in recv
+        # for the length added by encryption
+        extra_bytes = 0
+        if self.encrypt:
+            extra_bytes += 40
+
         print ("Started receiving data packets...")
         # keep trying to receive packets until the receiver has more bytes left to receive
         while bytes_to_receive > 0:
@@ -549,7 +573,7 @@ class socket:
             try:
                 # receives the packet of header + maximum data size bytes (although it will be limited
                 # by the sender on the other side)
-                packet_received = self.socket.recv(PACKET_HEADER_LENGTH + bytes_to_receive)
+                packet_received = self.socket.recv(PACKET_HEADER_LENGTH + bytes_to_receive + extra_bytes)
 
                 # sends the packet to another method to manage it and gets back the data in return
                 str_received = self.manage_recvd_data_packet(packet_received)
@@ -606,15 +630,15 @@ class socket:
         if packet_header[PACKET_SEQUENCE_NO_INDEX] != self.ack_no:
             return
 
-        # if packet_header option field says 0x01 and self.encrypt != True Error
-        if packet_header[2] == 0x01 and self.encrypt is not True:
+        # if encrypt is set and the packet received is not encrypted then error and exit
+        if self.encrypt is not True and packet_header[2] == 0x01:
             print('packet was encrypted but self.encrypt != True')
             sys.exit(2)
+
 
         # if the packet is encrypted decrypt it
         if packet_header[2] == 0x01:
             # try:
-                # print(len(packet_data))
             packet_data = self.box.decrypt(packet_data)
             # except Exception as e:
             #     # print(e)
@@ -631,12 +655,6 @@ class socket:
         self.sequence_no += 1
         # the server sends the packet to ACK the data packet it received
         self.socket.sendto(ack_packet, self.send_address)
-
-
-
-
-
-
 
         # the data or the payload is then itself is returned from this method
         return packet_data
