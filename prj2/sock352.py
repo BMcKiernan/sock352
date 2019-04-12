@@ -606,6 +606,19 @@ class socket:
         if packet_header[PACKET_SEQUENCE_NO_INDEX] != self.ack_no:
             return
 
+        # if packet_header option field says 0x01 and self.encrypt != True Error
+        if packet_header[2] == 0x01 and self.encrypt is not True:
+            print('packet was encrypted but self.encrypt != True')
+            sys.exit(2)
+
+        # if the packet is encrypted decrypt it
+        if packet_header[2] == 0x01:
+            # try:
+                # print(len(packet_data))
+            packet_data = self.box.decrypt(packet_data)
+            # except Exception as e:
+            #     # print(e)
+
         # adds the payload data to the data packet array
         self.data_packets.append(packet_data)
         # increments the acknowledgement by 1 since it is supposed to be the next expected sequence number
@@ -619,18 +632,9 @@ class socket:
         # the server sends the packet to ACK the data packet it received
         self.socket.sendto(ack_packet, self.send_address)
 
-        # if packet_header option field says 0x01 and self.encrypt != True Error
-        if packet_header[2] == 0x01 and self.encrypt is not True:
-            print('packet was encrypted but self.encrypt != True')
-            sys.exit(2)
 
-        # if the packet is encrypted decrypt it
-        if packet_header[2] == 0x01:
-            try:
-                # print(len(packet_data))
-                packet_data = self.box.decrypt(packet_data)
-            except Exception as e:
-                # print(e)
+
+
 
 
 
