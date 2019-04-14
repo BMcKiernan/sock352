@@ -13,8 +13,7 @@ import sys
 import time
 from random import randint
 
-# encryption libraries 
-import nacl.utils
+# encryption libraries
 import nacl.secret
 import nacl.utils
 from nacl.public import PrivateKey, Box
@@ -133,6 +132,7 @@ def readKeyChain(filename):
 
     return (publicKeys,privateKeys)
 
+
 class socket:
     
     def __init__(self):
@@ -149,7 +149,7 @@ class socket:
         # sets the boolean for whether or not the socket is connected
         self.is_connected = False
 
-        # controls whather or not this socket can close
+        # controls whether or not this socket can close
         self.can_close = False
 
         # selects a random sequence number between 1 and 1000000 as the first sequence number
@@ -196,9 +196,9 @@ class socket:
             if args[1] == ENCRYPT:
                 self.encrypt = True
 
-        # if the connection is encrypted get the public and private keys
+        # if the connection should be encrypted get the public and private keys
         if self.encrypt:
-            print(address[0], str(portTx))
+            # print(address[0], str(portTx))
 
             # checks to see if conversion needs to be made in terms of 127.0.0.1/localhost
             # this lets the keyfile specify either creating an error in the dictionary
@@ -445,7 +445,7 @@ class socket:
             #                                              MAXIMUM_PAYLOAD_SIZE * i + payload_len])
         return total_packets
 
-    def send(self,buffer):
+    def send(self, buffer):
         # makes sure that the file length is set and has been communicated to the receiver
         if self.file_len == -1:
             self.socket.sendto(buffer, self.send_address)
@@ -560,7 +560,7 @@ class socket:
         # also declares a variable to hold all the string of the data that has been received
         data_received = ""
 
-        # if self.encrypt is true 40 extra bytes need to be specified in recv
+        # if self.encrypt is true 40 extra bytes need to be added in recv on line 576
         # for the length added by encryption
         extra_bytes = 0
         if self.encrypt:
@@ -635,13 +635,12 @@ class socket:
             print('packet was encrypted but self.encrypt != True')
             sys.exit(2)
 
-
         # if the packet is encrypted decrypt it
         if packet_header[2] == 0x01:
-            # try:
-            packet_data = self.box.decrypt(packet_data)
-            # except Exception as e:
-            #     # print(e)
+            try:
+                packet_data = self.box.decrypt(packet_data)
+            except Exception as e:
+                print(e)
 
         # adds the payload data to the data packet array
         self.data_packets.append(packet_data)
