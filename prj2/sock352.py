@@ -4,6 +4,10 @@
 # You wil need to fill in the various methods in this
 # library 
 
+# Citation: The majority of this code belongs to Anarav Patel and Saurin Shah
+# Citation: Their code was then lightly edited by Abraham Gale
+# Citation: The changes to the code were written by Brian McKiernan
+
 # main libraries 
 import binascii
 import threading
@@ -202,11 +206,12 @@ class socket:
 
             # checks to see if conversion needs to be made in terms of 127.0.0.1/localhost
             # this lets the keyfile specify either creating an error in the dictionary
-            key = (address[0], str(address[1]))
-            if address[0] == '127.0.0.1' and ('127.0.0.1', str(address[1])) not in publicKeys:
-                key = ('localhost', str(portTx))
-            elif address[0] == 'localhost' and ('localhost', str(address[1])) not in publicKeys:
-                key = ('127.0.0.1', str(portTx))
+            str_Tx = str(portTx)
+            key = (address[0], str_Tx)
+            if address[0] == '127.0.0.1' and ('127.0.0.1', str_Tx) not in publicKeys:
+                key = ('localhost', str_Tx)
+            elif address[0] == 'localhost' and ('localhost', str_Tx) not in publicKeys:
+                key = ('127.0.0.1', str_Tx)
 
             # setup the box and nonce
             self.box = Box(privateKeys[('*', '*')], publicKeys[key])
